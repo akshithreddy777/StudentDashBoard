@@ -10,6 +10,8 @@
 // auth.js runs first and sets window.SD_USER ({ id, name, email }) or null.
 const CURRENT_USER = window.SD_USER || null;
 
+
+
 // Each account gets its own keys, e.g. "sd_u_<userId>_tasks".
 const USER_PREFIX = CURRENT_USER ? `sd_u_${CURRENT_USER.id}_` : "sd_anon_";
 const STORAGE_KEYS = {
