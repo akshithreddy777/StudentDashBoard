@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" data-page="login">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in – StudyDeck</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Same palette and components as index.html so both pages match */
+    :root {
+      --bg:#F6E7C1; --card:#FFFDF5; --surface:#F3EBD3; --primary:#808000; --primary-soft:#A3A66A;
+      --on-primary:#FFFDF5; --text:#3B2F23; --muted:#7A6B58; --border:#E4D6B0;
+      --shadow:0 1px 2px rgba(59,47,35,.06), 0 8px 24px rgba(59,47,35,.07);
+    }
+    html.dark {
+      --bg:#080F25; --card:#111C36; --surface:#1A2948; --primary:#8DB9E8; --primary-soft:#A9A5D8;
+      --on-primary:#080F25; --text:#E8EDF7; --muted:#9AA7C2; --border:#22345C;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+    body { font-family:'Manrope',system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    .muted { color:var(--muted); }
+    .overdue { color:#B03A2E; }
+    html.dark .overdue { color:#F1948A; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:1.25rem; box-shadow:var(--shadow); }
+    .field { width:100%; padding:.65rem 1rem; border-radius:.75rem; background:var(--surface); border:1px solid var(--border); color:var(--text); }
+    .btn-primary { background:var(--primary); color:var(--on-primary); border-radius:.75rem; font-weight:700; transition:filter .2s, transform .2s; }
+    .btn-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:.6; cursor:wait; transform:none; }
+    .chip { padding:.5rem 1rem; border-radius:999px; font-weight:600; background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .chip.active { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
+
+    :focus-visible { outline:3px solid var(--primary-soft); outline-offset:2px; }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <main class="min-h-screen grid place-items-center p-4">
+    <div class="card w-full max-w-md p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl grid place-items-center text-lg font-extrabold" style="background:var(--primary); color:var(--on-primary)">S</div>
+        <span class="text-xl font-extrabold tracking-tight">StudyDeck</span>
+      </div>
+
+      <div class="flex gap-2 mb-5" role="tablist" aria-label="Account">
+        <button id="authTabSignin" type="button" role="tab" aria-selected="true" class="chip active">Sign in</button>
+        <button id="authTabSignup" type="button" role="tab" aria-selected="false" class="chip">Create account</button>
+      </div>
+
+      <h1 id="authTitle" class="text-2xl font-extrabold tracking-tight">Welcome back</h1>
+      <p id="authSubtitle" class="muted mt-1 mb-5">Sign in to pick up where you left off.</p>
+
+      <form id="authForm" class="grid gap-3" novalidate>
+        <div id="authNameWrap" class="hidden">
+          <label for="authName" class="block text-sm font-semibold mb-1">Name</label>
+          <input id="authName" type="text" class="field" autocomplete="name" />
+        </div>
+        <div>
+          <label for="authEmail" class="block text-sm font-semibold mb-1">Email</label>
+          <input id="authEmail" type="email" class="field" autocomplete="email" />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="authPassword" class="block text-sm font-semibold">Password</label>
+            <button id="authShowPassword" type="button" class="text-sm font-semibold muted" aria-pressed="false">Show</button>
+          </div>
+          <input id="authPassword" type="password" class="field" autocomplete="current-password" />
+        </div>
+        <div id="authConfirmWrap" class="hidden">
+          <label for="authConfirm" class="block text-sm font-semibold mb-1">Confirm password</label>
+          <input id="authConfirm" type="password" class="field" autocomplete="new-password" />
+        </div>
+        <label class="flex items-center gap-2 text-sm font-semibold">
+          <input id="authRemember" type="checkbox" checked /> Keep me signed in on this device
+        </label>
+        <p id="authError" role="alert" class="hidden text-sm font-semibold overdue"></p>
+        <button id="authSubmit" type="submit" class="btn-primary px-5 py-2.5">Sign in</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+</html>
