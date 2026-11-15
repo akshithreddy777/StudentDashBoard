@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StudyDeck – Student Productivity Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:#F6E7C1; --card:#FFFDF5; --surface:#F3EBD3; --primary:#808000; --primary-soft:#A3A66A;
+      --on-primary:#FFFDF5; --text:#3B2F23; --muted:#7A6B58; --border:#E4D6B0;
+      --shadow:0 1px 2px rgba(59,47,35,.06), 0 8px 24px rgba(59,47,35,.07);
+    }
+    html.dark {
+      --bg:#080F25; --card:#111C36; --surface:#1A2948; --primary:#8DB9E8; --primary-soft:#A9A5D8;
+      --on-primary:#080F25; --text:#E8EDF7; --muted:#9AA7C2; --border:#22345C;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+    body { font-family:'Manrope',system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    body, .themed { transition:background-color .35s ease, color .35s ease, border-color .35s ease, box-shadow .35s ease; }
+    .muted { color:var(--muted); }
+    .overdue { color:#B03A2E; }
+    html.dark .overdue { color:#F1948A; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:1.25rem; box-shadow:var(--shadow); }
+    .field { width:100%; padding:.65rem 1rem; border-radius:.75rem; background:var(--surface); border:1px solid var(--border); color:var(--text); }
+    .btn-primary { background:var(--primary); color:var(--on-primary); border-radius:.75rem; font-weight:700; transition:filter .2s, transform .2s; }
+    .btn-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    .btn-ghost { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:.75rem; font-weight:600; transition:filter .2s; }
+    .btn-ghost:hover { filter:brightness(.95); }
+    .btn-danger { background:transparent; color:#B03A2E; border:1px solid #B03A2E66; border-radius:.75rem; font-weight:600; }
+    .btn-danger:hover { background:#B03A2E18; }
+    html.dark .btn-danger { color:#F1948A; border-color:#F1948A66; }
+
+    .badge { padding:.1rem .6rem; border-radius:999px; font-size:.75rem; font-weight:700; }
+    .badge-high { background:#C0392B22; color:#B03A2E; }
+    .badge-medium { background:#D4A01733; color:#8A6A00; }
+    .badge-low { background:var(--surface); color:var(--muted); }
+    .badge-done { background:var(--primary); color:var(--on-primary); }
+    html.dark .badge-high { color:#F1948A; }
+    html.dark .badge-medium { color:#F5D77A; }
+
+    .nav-link { display:flex; align-items:center; gap:.65rem; padding:.6rem .9rem; border-radius:.75rem; color:var(--muted); font-weight:600; white-space:nowrap; transition:background-color .2s, color .2s; }
+    .nav-link:hover { background:var(--surface); color:var(--text); }
+    .nav-link.active { background:var(--primary); color:var(--on-primary); }
+
+    .chip { padding:.5rem 1rem; border-radius:999px; font-weight:600; background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .chip.active { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
+
+    .progress-track { background:var(--surface); border-radius:999px; height:.6rem; overflow:hidden; }
+    .progress-fill { background:var(--primary); height:100%; border-radius:999px; transition:width .6s ease; }
+    .bar { width:70%; max-width:36px; background:var(--primary); border-radius:.5rem .5rem 0 0; transition:height .5s ease; }
+
+    .cal-day { aspect-ratio:1; border-radius:.75rem; font-weight:600; position:relative; color:var(--text); transition:background-color .2s; }
+    .cal-day:hover { background:var(--surface); }
+    .cal-day.today { border:2px solid var(--primary-soft); }
+    .cal-day.selected { background:var(--primary); color:var(--on-primary); }
+    .cal-day.has-item::after { content:""; position:absolute; bottom:6px; left:50%; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:var(--primary-soft); }
+
+    .search-result { display:flex; gap:.75rem; align-items:center; width:100%; padding:.6rem .9rem; border-radius:.6rem; }
+    .search-result:hover { background:var(--surface); }
+    .popup { background:var(--card); border:1px solid var(--border); border-radius:1rem; box-shadow:var(--shadow); }
+
+    :focus-visible { outline:3px solid var(--primary-soft); outline-offset:2px; }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <div class="lg:flex">
+
+    <!-- SIDEBAR -->
+    <aside class="lg:w-64 lg:h-screen lg:sticky lg:top-0 p-4 lg:p-5 themed" style="border-right:1px solid var(--border); background:var(--card)">
+      <div class="flex items-center gap-3 mb-4 lg:mb-8 px-1">
+        <div class="w-10 h-10 rounded-xl grid place-items-center text-lg font-extrabold" style="background:var(--primary); color:var(--on-primary)">S</div>
+        <span class="text-xl font-extrabold tracking-tight">StudyDeck</span>
+      </div>
+      <nav id="sidebarNav" aria-label="Main navigation" class="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
+        <a href="#dashboard" class="nav-link active" data-section="dashboard">🏠 Dashboard</a>
+        <a href="#tasks"     class="nav-link" data-section="tasks">✅ Tasks</a>
+        <a href="#notes"     class="nav-link" data-section="notes">📝 Notes</a>
+        <a href="#timer"     class="nav-link" data-section="timer">⏱️ Pomodoro</a>
+        <a href="#expenses"  class="nav-link" data-section="expenses">💸 Expenses</a>
+        <a href="#goals"     class="nav-link" data-section="goals">🎯 Goals</a>
+        <a href="#calendar"  class="nav-link" data-section="calendar">📅 Calendar</a>
+        <a href="#analytics" class="nav-link" data-section="analytics">📊 Analytics</a>
+      </nav>
+    </aside>
+
+    <div class="flex-1 min-w-0">
+
+      <!-- TOP BAR -->
+      <header class="flex items-center gap-3 p-4 lg:px-8 lg:py-5">
+        <div id="searchWrap" class="relative flex-1 max-w-xl">
+          <label for="globalSearch" class="sr-only">Search everything</label>
+          <input id="globalSearch" type="search" placeholder="Search everything  (press / to focus)" class="field" autocomplete="off" />
+          <div id="searchResults" class="popup hidden absolute left-0 right-0 mt-2 p-2 z-30"></div>
+        </div>
+
+        <div id="notifWrap" class="relative">
+          <button id="notificationBtn" type="button" aria-label="Notifications"
+            class="themed relative w-11 h-11 rounded-xl grid place-items-center" style="background:var(--card); border:1px solid var(--border)">
+            🔔
+            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 text-[11px] font-bold px-1.5 rounded-full" style="background:var(--primary); color:var(--on-primary)">0</span>
+          </button>
+          <div id="notificationPanel" class="popup hidden absolute right-0 mt-2 w-80 max-w-[85vw] p-4 z-30">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold">Notifications</h2>
+              <button id="clearNotifications" type="button" class="btn-ghost px-3 py-1 text-sm">Clear all</button>
+            </div>
+            <ul id="notificationList" class="max-h-72 overflow-y-auto"></ul>
+          </div>
+        </div>
+
+        <button id="themeToggle" type="button" aria-label="Switch theme"
+          class="themed w-11 h-11 rounded-xl grid place-items-center" style="background:var(--card); border:1px solid var(--border)">🌙</button>
+      </header>
+
+      <main class="px-4 pb-16 lg:px-8">
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" data-view>
+          <div class="mb-6">
+            <h1 id="welcomeMessage" class="text-3xl font-extrabold tracking-tight">Welcome back</h1>
+            <p id="currentDateTime" class="mt-1 muted"></p>
+          </div>
+          <div class="grid gap-4 grid-cols-2 xl:grid-cols-3">
+            <article class="card p-5"><p class="text-sm font-semibold muted">Total tasks</p><p id="statTotalTasks" class="text-3xl font-extrabold mt-1">0</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Completed</p><p id="statCompletedTasks" class="text-3xl font-extrabold mt-1">0</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Pending</p><p id="statPendingTasks" class="text-3xl font-extrabold mt-1">0</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Study hours</p><p id="statStudyHours" class="text-3xl font-extrabold mt-1">0h</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Total expenses</p><p id="statTotalExpenses" class="text-3xl font-extrabold mt-1">₹0</p></article>
+            <article class="card p-5">
+              <p class="text-sm font-semibold muted">Completion rate</p>
+              <p id="statCompletionPercent" class="text-3xl font-extrabold mt-1">0%</p>
+              <div class="progress-track mt-3"><div id="completionBar" class="progress-fill" style="width:0%"></div></div>
+            </article>
+          </div>
+          <div class="grid gap-4 mt-4 lg:grid-cols-2">
+            <article class="card p-6">
+              <h2 class="text-lg font-bold">Today's study progress</h2>
+              <p id="todayProgressText" class="mt-1 text-sm muted"></p>
+              <div class="progress-track mt-4"><div id="todayProgressBar" class="progress-fill" style="width:0%"></div></div>
+            </article>
+            <article class="card p-6">
+              <h2 class="text-lg font-bold">Recent activity</h2>
+              <ul id="recentActivityList" class="mt-3 space-y-2 text-sm"></ul>
+            </article>
+          </div>
+          <article class="card p-6 mt-4">
+            <p id="quoteText" class="text-lg font-semibold"></p>
+            <p id="quoteAuthor" class="mt-1 text-sm muted"></p>
+            <button id="newQuoteBtn" type="button" class="btn-ghost px-3 py-1.5 text-sm mt-3">New quote</button>
+          </article>
+        </section>
+
+        <!-- TASKS -->
+        <section id="tasks" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Tasks</h1>
+          <div class="card p-6">
+            <form id="taskForm" class="grid gap-3 md:grid-cols-2">
+              <input type="hidden" id="taskId" />
+              <div class="md:col-span-2">
+                <label for="taskTitle" class="block text-sm font-semibold mb-1">Task title</label>
+                <input id="taskTitle" type="text" class="field" placeholder="e.g. Finish chapter 4 notes" />
+              </div>
+              <div>
+                <label for="taskPriority" class="block text-sm font-semibold mb-1">Priority</label>
+                <select id="taskPriority" class="field">
+                  <option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label for="taskDueDate" class="block text-sm font-semibold mb-1">Due date</label>
+                <input id="taskDueDate" type="date" class="field" />
+              </div>
+              <div class="md:col-span-2 flex gap-2">
+                <button id="taskSubmitBtn" type="submit" class="btn-primary px-5 py-2.5">Add task</button>
+                <button id="taskCancelBtn" type="button" class="btn-ghost px-5 py-2.5 hidden">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="grid gap-3 mt-4 sm:grid-cols-2 lg:grid-cols-4">
+            <input id="taskSearch" type="search" class="field" placeholder="Search tasks…" aria-label="Search tasks" />
+            <select id="taskFilterStatus" class="field" aria-label="Filter by status">
+              <option value="all">All statuses</option><option value="pending">Pending</option><option value="completed">Completed</option>
+            </select>
+            <select id="taskFilterPriority" class="field" aria-label="Filter by priority">
+              <option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+            </select>
+            <select id="taskSort" class="field" aria-label="Sort tasks">
+              <option value="newest">Newest first</option><option value="due">Due date</option><option value="priority">Priority</option>
+            </select>
+          </div>
+          <ul id="taskList" class="mt-4 space-y-3"></ul>
+        </section>
+
+        <!-- NOTES -->
+        <section id="notes" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Notes</h1>
+          <div class="card p-6">
+            <form id="noteForm" class="grid gap-3">
+              <input type="hidden" id="noteId" />
+              <div>
+                <label for="noteTitle" class="block text-sm font-semibold mb-1">Title</label>
+                <input id="noteTitle" type="text" class="field" />
+              </div>
+              <div>
+                <label for="noteBody" class="block text-sm font-semibold mb-1">Description</label>
+                <textarea id="noteBody" rows="4" class="field"></textarea>
+              </div>
+              <div class="flex gap-2">
+                <button id="noteSubmitBtn" type="submit" class="btn-primary px-5 py-2.5">Save note</button>
+                <button id="noteCancelBtn" type="button" class="btn-ghost px-5 py-2.5 hidden">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <input id="noteSearch" type="search" class="field mt-4 max-w-md" placeholder="Search notes…" aria-label="Search notes" />
+          <div id="noteList" class="grid gap-4 mt-4 sm:grid-cols-2 xl:grid-cols-3"></div>
+        </section>
+
+        <!-- POMODORO -->
+        <section id="timer" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Pomodoro timer</h1>
+          <div class="card p-8 text-center max-w-xl">
+            <div id="timerModes" class="flex justify-center gap-2 flex-wrap">
+              <button type="button" class="chip active" data-mode="focus">Focus 25</button>
+              <button type="button" class="chip" data-mode="short">Short break 5</button>
+              <button type="button" class="chip" data-mode="long">Long break 15</button>
+            </div>
+            <p id="timerLabel" class="mt-6 font-semibold muted">Focus</p>
+            <p id="timerDisplay" class="text-7xl font-extrabold tracking-tight my-2" aria-live="off">25:00</p>
+            <div class="progress-track mt-4"><div id="timerProgress" class="progress-fill" style="width:0%"></div></div>
+            <div class="flex justify-center gap-3 mt-6">
+              <button id="timerToggleBtn" type="button" class="btn-primary px-8 py-3">Start</button>
+              <button id="timerResetBtn" type="button" class="btn-ghost px-8 py-3">Reset</button>
+            </div>
+          </div>
+          <div class="grid gap-4 grid-cols-2 max-w-xl mt-4">
+            <article class="card p-5"><p class="text-sm font-semibold muted">Sessions completed</p><p id="sessionsCount" class="text-3xl font-extrabold mt-1">0</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Total study time</p><p id="totalStudyTime" class="text-3xl font-extrabold mt-1">0m</p></article>
+          </div>
+        </section>
+
+        <!-- EXPENSES -->
+        <section id="expenses" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Expenses</h1>
+          <div class="grid gap-4 grid-cols-2 mb-4">
+            <article class="card p-5"><p class="text-sm font-semibold muted">Total spent</p><p id="expenseTotal" class="text-3xl font-extrabold mt-1">₹0.00</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">This month</p><p id="expenseMonthTotal" class="text-3xl font-extrabold mt-1">₹0.00</p></article>
+          </div>
+          <div class="card p-6">
+            <form id="expenseForm" class="grid gap-3 md:grid-cols-2">
+              <input type="hidden" id="expenseId" />
+              <div>
+                <label for="expenseTitle" class="block text-sm font-semibold mb-1">What was it for?</label>
+                <input id="expenseTitle" type="text" class="field" />
+              </div>
+              <div>
+                <label for="expenseAmount" class="block text-sm font-semibold mb-1">Amount (₹)</label>
+                <input id="expenseAmount" type="number" min="0" step="0.01" class="field" />
+              </div>
+              <div>
+                <label for="expenseCategory" class="block text-sm font-semibold mb-1">Category</label>
+                <select id="expenseCategory" class="field">
+                  <option>Food</option><option>Transport</option><option>Books</option><option>Fees</option><option>Entertainment</option><option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="expenseDate" class="block text-sm font-semibold mb-1">Date</label>
+                <input id="expenseDate" type="date" class="field" />
+              </div>
+              <div class="md:col-span-2 flex gap-2">
+                <button id="expenseSubmitBtn" type="submit" class="btn-primary px-5 py-2.5">Add expense</button>
+                <button id="expenseCancelBtn" type="button" class="btn-ghost px-5 py-2.5 hidden">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div class="grid gap-4 mt-4 lg:grid-cols-2">
+            <article class="card p-6"><h2 class="font-bold mb-3">Spending by category</h2><div id="categoryBreakdown"></div></article>
+            <article class="card p-6"><h2 class="font-bold mb-3">Monthly summary</h2><div id="expenseMonthly"></div></article>
+          </div>
+          <ul id="expenseList" class="mt-4 space-y-3"></ul>
+        </section>
+
+        <!-- GOALS -->
+        <section id="goals" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Study goals</h1>
+          <div class="card p-6">
+            <form id="goalForm" class="grid gap-3 md:grid-cols-3">
+              <input type="hidden" id="goalId" />
+              <div class="md:col-span-3">
+                <label for="goalTitle" class="block text-sm font-semibold mb-1">Goal</label>
+                <input id="goalTitle" type="text" class="field" placeholder="e.g. Revise physics" />
+              </div>
+              <div>
+                <label for="goalType" class="block text-sm font-semibold mb-1">Type</label>
+                <select id="goalType" class="field"><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+              </div>
+              <div>
+                <label for="goalTarget" class="block text-sm font-semibold mb-1">Target (minutes)</label>
+                <input id="goalTarget" type="number" min="1" class="field" />
+              </div>
+              <div class="flex items-end gap-2">
+                <button id="goalSubmitBtn" type="submit" class="btn-primary px-5 py-2.5">Add goal</button>
+                <button id="goalCancelBtn" type="button" class="btn-ghost px-5 py-2.5 hidden">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <ul id="goalList" class="mt-4 space-y-3"></ul>
+        </section>
+
+        <!-- CALENDAR -->
+        <section id="calendar" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Calendar & planner</h1>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <article class="card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <button id="calPrev" type="button" class="btn-ghost px-3 py-1.5" aria-label="Previous month">‹</button>
+                <h2 id="calendarTitle" class="font-bold"></h2>
+                <button id="calNext" type="button" class="btn-ghost px-3 py-1.5" aria-label="Next month">›</button>
+              </div>
+              <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+            </article>
+
+            <div class="space-y-4">
+              <article class="card p-5">
+                <form id="eventForm" class="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" id="eventId" />
+                  <div class="sm:col-span-2">
+                    <label for="eventTitle" class="block text-sm font-semibold mb-1">Event title</label>
+                    <input id="eventTitle" type="text" class="field" placeholder="e.g. Math study group" />
+                  </div>
+                  <div>
+                    <label for="eventDate" class="block text-sm font-semibold mb-1">Date</label>
+                    <input id="eventDate" type="date" class="field" />
+                  </div>
+                  <div>
+                    <label for="eventTime" class="block text-sm font-semibold mb-1">Time (optional)</label>
+                    <input id="eventTime" type="time" class="field" />
+                  </div>
+                  <div class="sm:col-span-2 flex gap-2">
+                    <button id="eventSubmitBtn" type="submit" class="btn-primary px-5 py-2.5">Add event</button>
+                    <button id="eventCancelBtn" type="button" class="btn-ghost px-5 py-2.5 hidden">Cancel</button>
+                  </div>
+                </form>
+              </article>
+              <article class="card p-5"><h2 id="dayEventsTitle" class="font-bold mb-2">Schedule</h2><ul id="dayEventsList"></ul></article>
+              <article class="card p-5"><h2 class="font-bold mb-2">Upcoming deadlines</h2><ul id="upcomingList"></ul></article>
+            </div>
+          </div>
+        </section>
+
+        <!-- ANALYTICS -->
+        <section id="analytics" data-view class="hidden">
+          <h1 class="text-3xl font-extrabold tracking-tight mb-6">Analytics</h1>
+          <div class="grid gap-4 grid-cols-2 xl:grid-cols-4">
+            <article class="card p-5"><p class="text-sm font-semibold muted">Study hours (7 days)</p><p id="anaWeekHours" class="text-3xl font-extrabold mt-1">0h</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Tasks done (7 days)</p><p id="anaCompleted" class="text-3xl font-extrabold mt-1">0</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Productivity</p><p id="anaProductivity" class="text-3xl font-extrabold mt-1">0%</p></article>
+            <article class="card p-5"><p class="text-sm font-semibold muted">Study consistency</p><p id="anaConsistency" class="text-3xl font-extrabold mt-1">0%</p></article>
+          </div>
+          <article class="card p-6 mt-4">
+            <h2 class="font-bold mb-4">Study minutes per day</h2>
+            <div id="anaChart" class="flex items-end gap-2 h-52"></div>
+          </article>
+          <article class="card p-6 mt-4">
+            <h2 class="font-bold">Spending in the last 7 days</h2>
+            <p id="anaSpent" class="text-2xl font-extrabold my-2">₹0.00</p>
+            <div id="anaCategories"></div>
+          </article>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast" role="status" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl font-semibold shadow-lg z-50"
+       style="background:var(--primary); color:var(--on-primary)"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
