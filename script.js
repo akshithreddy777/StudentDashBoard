@@ -7,22 +7,17 @@
 
 
 // ---------- 0. HELPERS ----------
-// auth.js runs first and sets window.SD_USER ({ id, name, email }) or null.
-const CURRENT_USER = window.SD_USER || null;
-
-// Each account gets its own keys, e.g. "sd_u_<userId>_tasks".
-const USER_PREFIX = CURRENT_USER ? `sd_u_${CURRENT_USER.id}_` : "sd_anon_";
 const STORAGE_KEYS = {
-  tasks: USER_PREFIX + "tasks",
-  notes: USER_PREFIX + "notes",
-  expenses: USER_PREFIX + "expenses",
-  goals: USER_PREFIX + "goals",
-  events: USER_PREFIX + "events",
-  study: USER_PREFIX + "study",
-  notifications: USER_PREFIX + "notifications",
-  reminded: USER_PREFIX + "reminded",
-  activity: USER_PREFIX + "activity",
-  theme: "sd_theme", // shared, so the sign-in screen matches the app
+  tasks: "sd_tasks",
+  notes: "sd_notes",
+  expenses: "sd_expenses",
+  goals: "sd_goals",
+  events: "sd_events",
+  study: "sd_study",
+  notifications: "sd_notifications",
+  reminded: "sd_reminded",
+  activity: "sd_activity",
+  theme: "sd_theme",
 };
 
 // Read from Local Storage. Storage only holds strings, so we JSON.parse.
@@ -196,7 +191,7 @@ const anaEls = {
 
 
 // ---------- 2. STATE ----------
-const studentName = CURRENT_USER ? CURRENT_USER.name.split(" ")[0] : "Student";
+const studentName = "Student";
 const BASE_TITLE = document.title;
 
 let tasks = loadFromStorage(STORAGE_KEYS.tasks, []);
@@ -1294,14 +1289,6 @@ function init() {
   refreshAll();
   showSection("dashboard");
   loadQuote();
-
-  // One-time message from auth.js (e.g. old data moved into the first account).
-  const notice = sessionStorage.getItem("sd_notice");
-  if (notice) {
-    showToast(notice);
-    sessionStorage.removeItem("sd_notice");
-  }
 }
 
-// Only start the app when someone is signed in; otherwise auth.js shows the login screen.
-if (CURRENT_USER) init();
+init();
